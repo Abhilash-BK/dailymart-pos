@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ShoppingBasket, LayoutDashboard, Package, Receipt, Search, Plus, Pencil,
   Trash2, X, Boxes, AlertTriangle, IndianRupee, Menu, Minus, Printer,
@@ -24,8 +24,8 @@ const currency = (value) => new Intl.NumberFormat("en-IN", {
 const emptyForm = { name: "", category: "Groceries", unit: "piece", price: "", stock: "" };
 
 export default function App() {
-  const [products, setProducts] = useState(starterProducts);
-  const [search, setSearch] = useState("");
+const [products, setProducts] = useState([]);
+const [loadingProducts, setLoadingProducts] = useState(true);  const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All Categories");
   const [activePage, setActivePage] = useState("Inventory");
   const [form, setForm] = useState(emptyForm);
@@ -41,6 +41,35 @@ export default function App() {
   const [sales, setSales] = useState([]);
   const [lastReceipt, setLastReceipt] = useState(null);
 
+  useEffect(() => {
+  async function loadProducts() {
+    try {
+      const response = await fetch(
+        "http://localhost:5000/api/products"
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to load products");
+      }
+
+      const data = await response.json();
+
+      const normalizedProducts = data.map((product) => ({
+        ...product,
+        id: product._id || product.id,
+      }));
+
+      setProducts(normalizedProducts);
+    } catch (error) {
+      console.error("Product loading error:", error);
+      setError("Unable to load products. Check the backend server.");
+    } finally {
+      setLoadingProducts(false);
+    }
+  }
+
+  loadProducts();
+}, []);
   const filteredProducts = useMemo(() => products.filter((product) =>
     product.name.toLowerCase().includes(search.toLowerCase()) &&
     (category === "All Categories" || product.category === category)
@@ -216,6 +245,9 @@ export default function App() {
               <div className="stat-card"><div className="stat-icon"><IndianRupee size={20} /></div><span>Stock value</span><strong>{currency(inventoryValue)}</strong><small>At current selling prices</small></div>
             </section>
             <section className="inventory-panel">
+              {loadingProducts && (
+  <p className="muted">Loading products...</p>
+)}
               <div className="section-heading"><div><h2>All products</h2><p>{filteredProducts.length} matching products</p></div></div>
               <div className="toolbar">
                 <div className="search-box"><Search size={18} /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by product name..." />
