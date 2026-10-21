@@ -97,34 +97,144 @@ const [loadingProducts, setLoadingProducts] = useState(true);  const [search, se
     setError(""); setSuccess(""); setFormOpen(true);
   }
 
-  function handleSubmit(event) {
-    event.preventDefault(); setError(""); setSuccess("");
-    const name = form.name.trim();
-    const price = Number(form.price);
-    const stock = Number(form.stock);
-    if (!name) return setError("Please enter a product name.");
-    if (!Number.isFinite(price) || price <= 0) return setError("Price must be greater than zero.");
-    if (!Number.isSafeInteger(stock) || stock < 0) return setError("Stock must be a whole number of zero or more.");
-    if (products.some((p) => p.name.trim().toLowerCase() === name.toLowerCase() && p.id !== editingId)) {
-      return setError("A product with this name already exists.");
-    }
-    const productData = { id: editingId ?? Date.now(), name, category: form.category, unit: form.unit, price, stock };
-    if (editingId !== null) {
-      setProducts((current) => current.map((p) => p.id === editingId ? productData : p));
-      setSuccess("Product updated successfully.");
-    } else {
-      setProducts((current) => [...current, productData]);
-      setSuccess("Product added successfully.");
-    }
-    setForm(emptyForm); setFormOpen(false); setEditingId(null);
+  
+async function handleSubmit(event) {
+  event.preventDefault();
+  setError("");
+  setSuccess("");
+
+  const name = form.name.trim();
+  const price = Number(form.price);
+  const stock = Number(form.stock);
+
+  if (!name) {
+    setError("Please enter a product name.");
+    return;
   }
 
-  function deleteProduct(product) {
-    if (!window.confirm(`Delete "${product.name}" from the inventory?`)) return;
-    setProducts((current) => current.filter((item) => item.id !== product.id));
-    setCart((current) => current.filter((item) => item.id !== product.id));
-    setSuccess(`${product.name} deleted successfully.`); setError("");
+  if (!Number.isFinite(price) || price <= 0) {
+    setError("Price must be greater than zero.");
+    return;
   }
+
+  if (!Number.isSafeInteger(stock) || stock < 0) {
+    setError("Stock must be a whole number of zero or more.");
+    return;
+  }
+
+  const duplicate = products.some(
+    (product) =>
+      product.name.trim().toLowerCase() === name.toLowerCase() &&
+      String(product.id) !== String(editingId)
+  );
+
+  if (duplicate) {
+    setError("A product with this name already exists.");
+    return;
+  }
+
+  const productData = {
+    name,
+    category: form.category,
+    unit: form.unit,
+    price,
+    stock,
+  };
+
+  try {
+    const isEditing = editingId !== null;
+
+    const response = await fetch(
+      isEditing
+        ? `http://localhost:5000/api/products/${editingId}`
+        : "http://localhost:5000/api/products",
+      {
+        method: isEditing ? "PUT" : "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(productData),
+      }
+    );
+
+    const savedProduct = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        savedProduct.message || savedProduct.error ||
+        "Unable to save product."
+      );
+    }
+
+    const normalizedProduct = {
+      ...savedProduct,
+      id: savedProduct._id || savedProduct.id,
+    };
+
+    if (isEditing) {
+      setProducts((current) =>
+        current.map((product) =>
+          String(product.id) === String(editingId)
+            ? normalizedProduct
+            : product
+        )
+      );
+      setSuccess("Product updated successfully.");
+    } else {
+      setProducts((current) => [...current, normalizedProduct]);
+      setSuccess("Product added successfully.");
+    }
+
+    setForm(emptyForm);
+    setFormOpen(false);
+    setEditingId(null);
+  } catch (error) {
+    console.error("Saving product failed:", error);
+    setError(error.message || "Unable to save product.");
+  }
+}
+
+
+  
+async function deleteProduct(product) {
+  const confirmed = window.confirm(
+    `Delete "${product.name}" from the inventory?`
+  );
+
+  if (!confirmed) return;
+
+  setError("");
+  setSuccess("");
+
+  try {
+    const response = await fetch(
+      `http://localhost:5000/api/products/${product.id}`,
+      {
+        method: "DELETE",
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        result.message || result.error || "Unable to delete product."
+      );
+    }
+
+    setProducts((current) =>
+      current.filter(
+        (item) => String(item.id) !== String(product.id)
+      )
+    );
+
+    setSuccess(`${product.name} deleted successfully.`);
+  } catch (error) {
+    console.error("Deleting product failed:", error);
+    setError(error.message || "Unable to delete product.");
+  }
+}
+
 
   function changePage(page) {
     setActivePage(page); setSuccess(""); setError("");
