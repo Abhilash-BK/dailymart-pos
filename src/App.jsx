@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ShoppingBasket, LayoutDashboard, Package, Receipt, Search, Plus, Pencil,
   Trash2, X, Boxes, AlertTriangle, IndianRupee, Menu, Minus, Printer,
-  ShoppingCart, CheckCircle2, Banknote, RotateCcw
+  ShoppingCart, CheckCircle2, Banknote, RotateCcw, History
 } from "lucide-react";
 import "./App.css";
 
@@ -40,6 +40,8 @@ const [loadingProducts, setLoadingProducts] = useState(true);  const [search, se
   const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [sales, setSales] = useState([]);
   const [lastReceipt, setLastReceipt] = useState(null);
+  const [salesSearch, setSalesSearch] = useState("");
+  const [salesDate, setSalesDate] = useState("");
 
   useEffect(() => {
   async function loadProducts() {
@@ -118,6 +120,19 @@ useEffect(() => {
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const discountAmount = Math.min(subtotal, Math.max(0, Number(discount) || 0));
   const grandTotal = Math.max(0, subtotal - discountAmount);
+  const filteredSales = sales.filter((sale) => {
+  const matchesSearch = String(sale.id || "")
+    .toLowerCase()
+    .includes(salesSearch.toLowerCase());
+
+  const saleDate = new Date(sale.date);
+  const matchesDate =
+    !salesDate ||
+    (Number.isFinite(saleDate.getTime()) &&
+      saleDate.toLocaleDateString("en-CA") === salesDate);
+
+  return matchesSearch && matchesDate;
+});
 
   function openAddForm() {
     setEditingId(null); setForm(emptyForm); setError(""); setSuccess(""); setFormOpen(true);
@@ -395,6 +410,7 @@ async function checkout() {
         {[
           { label: "Dashboard", icon: LayoutDashboard },
           { label: "Billing", icon: Receipt },
+          { label: "sales History", icon: History },
           { label: "Inventory", icon: Package },
         ].map(({ label, icon: Icon }) => (
           <button key={label} className={`nav-item ${activePage === label ? "active" : ""}`} onClick={() => changePage(label)}>
@@ -532,6 +548,105 @@ async function checkout() {
             </section>
           </>
         )}
+        {activePage === "Sales History" && (
+  <>
+    <section className="page-heading">
+      <div>
+        <p className="eyebrow">TRANSACTION RECORDS</p>
+        <h1>Sales History</h1>
+        <p className="muted">
+          Search saved bills and reprint customer receipts.
+        </p>
+      </div>
+    </section>
+
+    <section className="inventory-panel">
+      <div className="toolbar">
+        <div className="search-box">
+          <Search size={18} />
+          <input
+            value={salesSearch}
+            onChange={(e) => setSalesSearch(e.target.value)}
+            placeholder="Search receipt number..."
+          />
+        </div>
+
+        <input
+          className="category-select"
+          type="date"
+          value={salesDate}
+          onChange={(e) => setSalesDate(e.target.value)}
+          aria-label="Filter sales by date"
+        />
+
+        <button
+          className="secondary-button"
+          onClick={() => {
+            setSalesSearch("");
+            setSalesDate("");
+          }}
+        >
+          Clear filters
+        </button>
+      </div>
+
+      <div className="section-heading">
+        <div>
+          <h2>Saved bills</h2>
+          <p>{filteredSales.length} bills found</p>
+        </div>
+      </div>
+
+      {filteredSales.length === 0 ? (
+        <div className="empty-state">
+          No bills match your search.
+        </div>
+      ) : (
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>RECEIPT</th>
+                <th>DATE & TIME</th>
+                <th>ITEMS</th>
+                <th>PAYMENT</th>
+                <th>TOTAL</th>
+                <th>ACTION</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {filteredSales.map((sale) => (
+                <tr key={sale.id}>
+                  <td>{sale.id}</td>
+                  <td>{new Date(sale.date).toLocaleString()}</td>
+                  <td>
+                    {(sale.items || []).reduce(
+                      (total, item) =>
+                        total + Number(item.quantity || 0),
+                      0
+                    )}
+                  </td>
+                  <td>{sale.paymentMethod}</td>
+                  <td>{currency(sale.total)}</td>
+                  <td>
+                    <button
+                      className="secondary-button"
+                      onClick={() => setLastReceipt(sale)}
+                    >
+                      <Printer size={15} />
+                      View / Print
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  </>
+)}
       </main>
 
       {formOpen && <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setFormOpen(false); }}>
