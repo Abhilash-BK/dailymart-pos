@@ -70,6 +70,38 @@ const [loadingProducts, setLoadingProducts] = useState(true);  const [search, se
 
   loadProducts();
 }, []);
+useEffect(() => {
+  async function loadSales() {
+    try {
+      const response = await fetch(
+        "http://localhost:5000/api/sales"
+      );
+
+      if (!response.ok) {
+        throw new Error("Unable to load bill history.");
+      }
+
+      const data = await response.json();
+
+      setSales(
+        data.map((sale) => ({
+          ...sale,
+          id: sale.receiptNumber || sale._id,
+          date: new Date(sale.createdAt),
+          items: (sale.items || []).map((item) => ({
+            ...item,
+            id: item.productId,
+          })),
+        }))
+      );
+    } catch (error) {
+      console.error("Bill history loading failed:", error);
+      setError("Unable to load saved bill history.");
+    }
+  }
+
+  loadSales();
+}, []);
   const filteredProducts = useMemo(() => products.filter((product) =>
     product.name.toLowerCase().includes(search.toLowerCase()) &&
     (category === "All Categories" || product.category === category)
@@ -274,40 +306,80 @@ async function deleteProduct(product) {
     setCart((current) => current.map((item) => item.id === productId ? { ...item, quantity: nextQuantity } : item));
   }
 
-  function checkout() {
-    if (!cart.length) {
-      setError("Add at least one product to the cart before checkout.");
-      return;
-    }
-    const unavailable = cart.find((item) => {
-      const current = products.find((product) => product.id === item.id);
-      return !current || item.quantity > current.stock;
-    });
-    if (unavailable) {
-      setError(`Stock changed for ${unavailable.name}. Update the cart and try again.`);
-      return;
-    }
-    const sale = {
-      id: `DM-${Date.now().toString().slice(-8)}`,
-      date: new Date(),
-      items: cart.map((item) => ({ ...item })),
-      subtotal,
-      discount: discountAmount,
-      total: grandTotal,
-      paymentMethod,
-    };
-    setProducts((current) => current.map((product) => {
-      const sold = cart.find((item) => item.id === product.id);
-      return sold ? { ...product, stock: product.stock - sold.quantity } : product;
-    }));
-    setSales((current) => [sale, ...current]);
-    setLastReceipt(sale);
-    setCart([]);
-    setDiscount("0");
-    setError("");
-    setSuccess(`Sale ${sale.id} completed successfully.`);
+async function checkout() {
+  if (!cart.length) {
+    setError("Add at least one product before checkout.");
+    return;
   }
 
+  setError("");
+  setSuccess("");
+
+  try {
+    const response = await fetch("http://localhost:5000/api/sales", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        items: cart.map((item) => ({
+          productId: item.id,
+          quantity: item.quantity,
+        })),
+        discount: discountAmount,
+        paymentMethod,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || "Checkout failed.");
+    }
+
+    const savedReceipt = {
+      ...result,
+      id: result.receiptNumber || result._id,
+      date: new Date(result.createdAt || Date.now()),
+      items: result.items.map((item) => ({
+        ...item,
+        id: item.productId,
+      })),
+    };
+
+    // The sale is saved. Update the UI before refreshing inventory.
+    setSales((current) => [savedReceipt, ...current]);
+    setLastReceipt(savedReceipt);
+    setCart([]);
+    setDiscount("0");
+    setSuccess(`Sale ${savedReceipt.id} saved successfully.`);
+
+    try {
+      const productsResponse = await fetch(
+        "http://localhost:5000/api/products"
+      );
+
+      if (!productsResponse.ok) {
+        throw new Error("Inventory refresh failed.");
+      }
+
+      const data = await productsResponse.json();
+
+      setProducts(
+        data.map((product) => ({
+          ...product,
+          id: product._id || product.id,
+        }))
+      );
+    } catch (refreshError) {
+      console.error("Inventory refresh failed:", refreshError);
+      setError(
+        "Bill saved successfully, but inventory could not refresh. Reload the page."
+      );
+    }
+  } catch (error) {
+    console.error("Checkout failed:", error);
+    setError(error.message || "Unable to complete sale.");
+  }
+}
   function printReceipt() {
     window.print();
   }
