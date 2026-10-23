@@ -413,7 +413,12 @@ async function checkout() {
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand">
-          <div className="brand-icon"><ShoppingBasket size={23} /></div>
+          <div className="brand-icon"
+            onClick={() => changePage("Dashboard")}
+             role="button"
+             tabIndex={0}
+             title="Go to Dashboard">
+          <ShoppingBasket size={23} /></div>
           <div><strong>DailyMart</strong><span>STORE MANAGEMENT</span></div>
         </div>
         <p className="nav-label">WORKSPACE</p>
