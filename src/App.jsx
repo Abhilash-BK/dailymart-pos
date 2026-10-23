@@ -72,6 +72,7 @@ const [loadingProducts, setLoadingProducts] = useState(true);  const [search, se
 
   loadProducts();
 }, []);
+
 useEffect(() => {
   async function loadSales() {
     try {
@@ -80,30 +81,39 @@ useEffect(() => {
       );
 
       if (!response.ok) {
-        throw new Error("Unable to load bill history.");
+        throw new Error("Failed to fetch sales.");
       }
 
       const data = await response.json();
+      console.log("sales api response", data);
+      console.log("is array", Array.isArray(data));
+
+      if (!Array.isArray(data)) {
+        throw new Error("Sales API did not return an array.");
+      }
 
       setSales(
         data.map((sale) => ({
           ...sale,
           id: sale.receiptNumber || sale._id,
-          date: new Date(sale.createdAt),
-          items: (sale.items || []).map((item) => ({
+          date: sale.createdAt
+            ? new Date(sale.createdAt)
+            : new Date(),
+          items: (sale.items || []).map((item, index) => ({
             ...item,
-            id: item.productId,
+            id: item.productId || item._id || index,
           })),
         }))
       );
     } catch (error) {
-      console.error("Bill history loading failed:", error);
-      setError("Unable to load saved bill history.");
+      console.error("Loading sales failed:", error);
+      setError("Could not load saved sales.");
     }
   }
 
   loadSales();
 }, []);
+
   const filteredProducts = useMemo(() => products.filter((product) =>
     product.name.toLowerCase().includes(search.toLowerCase()) &&
     (category === "All Categories" || product.category === category)
@@ -410,7 +420,7 @@ async function checkout() {
         {[
           { label: "Dashboard", icon: LayoutDashboard },
           { label: "Billing", icon: Receipt },
-          { label: "sales History", icon: History },
+          { label: "Sales History", icon: History },
           { label: "Inventory", icon: Package },
         ].map(({ label, icon: Icon }) => (
           <button key={label} className={`nav-item ${activePage === label ? "active" : ""}`} onClick={() => changePage(label)}>
@@ -574,7 +584,7 @@ async function checkout() {
         <input
           className="category-select"
           type="date"
-          value={salesDate}
+          value={salesDate} 
           onChange={(e) => setSalesDate(e.target.value)}
           aria-label="Filter sales by date"
         />
