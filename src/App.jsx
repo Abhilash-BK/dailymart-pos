@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ShoppingBasket, LayoutDashboard, Package, Receipt, Search, Plus, Pencil,
   Trash2, X, Boxes, AlertTriangle, IndianRupee, Menu, Minus, Printer,
-  ShoppingCart, CheckCircle2, Banknote, RotateCcw, History
+  ShoppingCart, CheckCircle2, Banknote, RotateCcw, History, Sun, Moon
 } from "lucide-react";
 import "./App.css";
 
@@ -42,6 +42,44 @@ const [loadingProducts, setLoadingProducts] = useState(true);  const [search, se
   const [lastReceipt, setLastReceipt] = useState(null);
   const [salesSearch, setSalesSearch] = useState("");
   const [salesDate, setSalesDate] = useState("");
+  const [theme, setTheme] = useState(() => {
+  try {
+    return localStorage.getItem("dailymart-theme") || "system";
+  } catch {
+    return "system";
+  }
+});
+
+useEffect(() => {
+  const root = document.documentElement;
+
+  if (theme === "system") {
+    root.removeAttribute("data-theme");
+  } else {
+    root.setAttribute("data-theme", theme);
+  }
+
+  try {
+    if (theme === "system") {
+      localStorage.removeItem("dailymart-theme");
+    } else {
+      localStorage.setItem("dailymart-theme", theme);
+    }
+  } catch {
+    // Theme still works if browser storage is unavailable.
+  }
+}, [theme]);
+
+function toggleTheme() {
+  const currentTheme =
+    theme === "system"
+      ? window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light"
+      : theme;
+
+  setTheme(currentTheme === "dark" ? "light" : "dark");
+}
 
   useEffect(() => {
   async function loadProducts() {
@@ -442,8 +480,24 @@ async function checkout() {
         <header className="topbar">
           <div className="mobile-brand"><Menu size={21} />DailyMart</div>
           <div className="breadcrumb">Workspace <span>/</span> {activePage}</div>
-          <div className="topbar-right"><span className="live-dot" />POS Terminal <span className="terminal-tag">01</span></div>
-        </header>
+<div className="topbar-right">
+  <button
+    type="button"
+    className="theme-toggle"
+    onClick={toggleTheme}
+    aria-label={
+      theme === "dark" ? "Switch to light mode" : "Switch to dark mode"
+    }
+    title="Toggle light and dark mode"
+  >
+    {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+    <span>{theme === "dark" ? "Light mode" : "Dark mode"}</span>
+  </button>
+
+  <span className="live-dot" />
+  POS Terminal
+  <span className="terminal-tag">01</span>
+</div>        </header>
 
         {activePage === "Inventory" && (
           <>

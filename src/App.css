@@ -288,3 +288,212 @@ th, td { padding: 14px 10px; border-bottom: 1px solid #edf0ed; white-space: nowr
 }
 
 }
+/* DailyMart theme variables */
+:root {
+  color-scheme: light;
+  --page-bg: #f5f7f5;
+  --surface: #ffffff;
+  --text: #26332b;
+  --text-secondary: #66726a;
+  --border: #e1e7e2;
+  --green: #176b4c;
+  --green-light: #e8f4ed;
+  --input-bg: #ffffff;
+  --shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+
+/* Automatically use dark mode when the device prefers it */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --page-bg: #111713;
+    --surface: #1b231e;
+    --text: #edf4ef;
+    --text-secondary: #b1beb5;
+    --border: #303a34;
+    --green: #62c795;
+    --green-light: #263d30;
+    --input-bg: #202a23;
+    --shadow: 0 2px 10px rgba(0, 0, 0, 0.16);
+  }
+}
+
+/* Main layout */
+body,
+.app-shell,
+.main-content {
+  background: var(--page-bg);
+  color: var(--text);
+}
+
+body {
+  margin: 0;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.sidebar,
+.topbar,
+.stat-card,
+.inventory-panel,
+.product-modal,
+.receipt-modal,
+.cart-panel,
+.bill-panel {
+  background-color: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+  box-shadow: var(--shadow);
+}
+
+/* Text */
+h1,
+h2,
+h3,
+p,
+label,
+strong,
+td,
+th,
+.brand,
+.brand strong,
+.inventory-product strong,
+.user-profile strong {
+  color: var(--text);
+}
+
+.muted,
+.breadcrumb,
+.store-status,
+.user-profile span,
+.section-heading p {
+  color: var(--text-secondary);
+}
+
+/* Navigation */
+.nav-item {
+  color: var(--text-secondary);
+}
+
+.nav-item.active,
+.nav-item:hover:not(.active) {
+  background: var(--green-light);
+  color: var(--green);
+}
+
+/* Inputs and dropdowns */
+input,
+select,
+textarea,
+.search-box,
+.category-select,
+.discount-field input,
+.payment-field select {
+  background: var(--input-bg);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-secondary);
+}
+
+/* Cards, tables, buttons and dividers */
+.stat-card,
+table,
+th,
+td,
+.cart-item,
+.topbar,
+.store-status {
+  border-color: var(--border);
+}
+
+.secondary-button,
+.icon-button,
+.quantity-control button,
+.bill-product-card {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.secondary-button:hover,
+.icon-button:hover,
+.bill-product-card:hover:not(:disabled) {
+  background: var(--green-light);
+}
+
+.stat-icon,
+.product-avatar,
+.avatar,
+.bill-product-letter {
+  background: var(--green-light);
+  color: var(--green);
+}
+
+/* Keep printed receipts readable */
+@media print {
+  body,
+  .print-receipt {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+}
+
+/* Explicit light theme */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --page-bg: #f5f7f5;
+  --surface: #ffffff;
+  --text: #26332b;
+  --text-secondary: #66726a;
+  --border: #e1e7e2;
+  --green: #176b4c;
+  --green-light: #e8f4ed;
+  --input-bg: #ffffff;
+}
+
+/* Explicit dark theme */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page-bg: #111713;
+  --surface: #1b231e;
+  --text: #edf4ef;
+  --text-secondary: #b1beb5;
+  --border: #303a34;
+  --green: #62c795;
+  --green-light: #263d30;
+  --input-bg: #202a23;
+}
+
+/* Theme toggle button */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  white-space: nowrap;
+}
+
+.theme-toggle:hover {
+  background: var(--green-light);
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+
+@media (max-width: 600px) {
+  .theme-toggle span {
+    display: none;
+  }
+}
