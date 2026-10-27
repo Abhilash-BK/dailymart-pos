@@ -5,6 +5,7 @@ import {
   ShoppingCart, CheckCircle2, Banknote, RotateCcw, History, Sun, Moon
 } from "lucide-react";
 import "./App.css";
+import { apiFetch } from "./api";
 
 const starterProducts = [
   { id: 1, name: "Basmati Rice", category: "Groceries", unit: "kg", price: 120, stock: 25 },
@@ -23,7 +24,7 @@ const currency = (value) => new Intl.NumberFormat("en-IN", {
 }).format(value);
 const emptyForm = { name: "", category: "Groceries", unit: "piece", price: "", stock: "" };
 
-export default function App() {
+export default function App({onLogout}) {
 const [products, setProducts] = useState([]);
 const [loadingProducts, setLoadingProducts] = useState(true);  const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All Categories");
@@ -84,7 +85,7 @@ function toggleTheme() {
   useEffect(() => {
   async function loadProducts() {
     try {
-      const response = await fetch(
+      const response = await apifetch(
         "http://localhost:5000/api/products"
       );
 
@@ -114,7 +115,7 @@ function toggleTheme() {
 useEffect(() => {
   async function loadSales() {
     try {
-      const response = await fetch(
+      const response = await apifetch(
         "http://localhost:5000/api/sales"
       );
 
@@ -239,7 +240,7 @@ async function handleSubmit(event) {
   try {
     const isEditing = editingId !== null;
 
-    const response = await fetch(
+    const response = await apifetch(
       isEditing
         ? `http://localhost:5000/api/products/${editingId}`
         : "http://localhost:5000/api/products",
@@ -302,7 +303,7 @@ async function deleteProduct(product) {
   setSuccess("");
 
   try {
-    const response = await fetch(
+    const response = await apifetch(
       `http://localhost:5000/api/products/${product.id}`,
       {
         method: "DELETE",
@@ -379,7 +380,7 @@ async function checkout() {
   setSuccess("");
 
   try {
-    const response = await fetch("http://localhost:5000/api/sales", {
+    const response = await apifetch("http://localhost:5000/api/sales", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -416,7 +417,7 @@ async function checkout() {
     setSuccess(`Sale ${savedReceipt.id} saved successfully.`);
 
     try {
-      const productsResponse = await fetch(
+      const productsResponse = await apifetch(
         "http://localhost:5000/api/products"
       );
 
@@ -481,6 +482,13 @@ async function checkout() {
           <div className="mobile-brand"><Menu size={21} />DailyMart</div>
           <div className="breadcrumb">Workspace <span>/</span> {activePage}</div>
 <div className="topbar-right">
+  <button
+  type="button"
+  className="secondary-button"
+  onClick={onLogout}
+>
+  Sign out
+</button>
   <button
     type="button"
     className="theme-toggle"

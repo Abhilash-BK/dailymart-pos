@@ -1,4 +1,5 @@
-
+const authRoutes = require("./routes/auth");
+const authenticateToken = require("./middleware/authenticateToken");
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -8,7 +9,8 @@ const app = express();
 
 app.use(cors({ origin: "http://localhost:5173" }));
 app.use(express.json());
-
+app.use("/api/auth", authRoutes);
+app.use("/api", authenticateToken);
 // Product database schema
 const productSchema = new mongoose.Schema(
   {
