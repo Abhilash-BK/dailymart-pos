@@ -1,3 +1,4 @@
+
 import { useEffect, useMemo, useState } from "react";
 import {
   ShoppingBasket, LayoutDashboard, Package, Receipt, Search, Plus, Pencil,
@@ -6,6 +7,7 @@ import {
 } from "lucide-react";
 import "./App.css";
 import { apiFetch } from "./api";
+
 
 const starterProducts = [
   { id: 1, name: "Basmati Rice", category: "Groceries", unit: "kg", price: 120, stock: 25 },
