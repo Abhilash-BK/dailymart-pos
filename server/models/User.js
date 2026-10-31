@@ -15,7 +15,7 @@ const userSchema = new mongoose.Schema(
     // Store only the bcrypt password hash
     passwordHash: {
       type: String,
-      required: true,
+      required: false,
       select: false,
     },
 
