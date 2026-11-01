@@ -7,7 +7,7 @@ import {
   ShoppingCart, CheckCircle2, Banknote, RotateCcw, History, Sun, Moon
 } from "lucide-react";
 import "./App.css";
-import { apiFetch } from "./api";
+import { apifetch } from "./api";
 
 
 const starterProducts = [
