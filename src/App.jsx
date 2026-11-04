@@ -1,5 +1,3 @@
-
-
 import { useEffect, useMemo, useState } from "react";
 import {
   ShoppingBasket, LayoutDashboard, Package, Receipt, Search, Plus, Pencil,
@@ -7,7 +5,7 @@ import {
   ShoppingCart, CheckCircle2, Banknote, RotateCcw, History, Sun, Moon
 } from "lucide-react";
 import "./App.css";
-import { apifetch } from "./api";
+import { apiFetch } from "./api";
 
 
 const starterProducts = [
@@ -88,7 +86,7 @@ function toggleTheme() {
   useEffect(() => {
   async function loadProducts() {
     try {
-      const response = await apifetch(
+      const response = await apiFetch(
         "http://localhost:5000/api/products"
       );
 
@@ -118,7 +116,7 @@ function toggleTheme() {
 useEffect(() => {
   async function loadSales() {
     try {
-      const response = await apifetch(
+      const response = await apiFetch(
         "http://localhost:5000/api/sales"
       );
 
@@ -243,7 +241,7 @@ async function handleSubmit(event) {
   try {
     const isEditing = editingId !== null;
 
-    const response = await apifetch(
+    const response = await apiFetch(
       isEditing
         ? `http://localhost:5000/api/products/${editingId}`
         : "http://localhost:5000/api/products",
@@ -306,7 +304,7 @@ async function deleteProduct(product) {
   setSuccess("");
 
   try {
-    const response = await apifetch(
+    const response = await apiFetch(
       `http://localhost:5000/api/products/${product.id}`,
       {
         method: "DELETE",
@@ -383,7 +381,7 @@ async function checkout() {
   setSuccess("");
 
   try {
-    const response = await apifetch("http://localhost:5000/api/sales", {
+    const response = await apiFetch("http://localhost:5000/api/sales", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -420,7 +418,7 @@ async function checkout() {
     setSuccess(`Sale ${savedReceipt.id} saved successfully.`);
 
     try {
-      const productsResponse = await apifetch(
+      const productsResponse = await apiFetch(
         "http://localhost:5000/api/products"
       );
 
