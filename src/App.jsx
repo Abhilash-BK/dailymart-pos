@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ShoppingBasket, LayoutDashboard, Package, Receipt, Search, Plus, Pencil,
   Trash2, X, Boxes, AlertTriangle, IndianRupee, Menu, Minus, Printer,
-  ShoppingCart, CheckCircle2, Banknote, RotateCcw, History, Sun, Moon
+  ShoppingCart, CheckCircle2, Banknote, RotateCcw, History, Sun, Moon, 
+  UserCheck
 } from "lucide-react";
 import "./App.css";
 import { apiFetch } from "./api";
@@ -42,6 +43,8 @@ const [loadingProducts, setLoadingProducts] = useState(true);  const [search, se
   const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [sales, setSales] = useState([]);
   const [lastReceipt, setLastReceipt] = useState(null);
+  const [pendingEmployees, setPendingEmployees] = useState([]);
+const [loadingEmployees, setLoadingEmployees] = useState(false);
   const [salesSearch, setSalesSearch] = useState("");
   const [salesDate, setSalesDate] = useState("");
   const [theme, setTheme] = useState(() => {
@@ -153,6 +156,69 @@ useEffect(() => {
 
   loadSales();
 }, []);
+async function loadEmployees() {
+  setLoadingEmployees(true);
+  setError("");
+
+  try {
+    const response = await apiFetch(
+      "http://localhost:5000/api/auth/pending-employees"
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Unable to load employees.");
+    }
+
+    const employees = Array.isArray(data)
+      ? data
+      : data.employees || data.users || [];
+
+    setPendingEmployees(employees);
+  } catch (error) {
+    console.error("Loading employees failed:", error);
+    setError(error.message || "Unable to load pending employees.");
+  } finally {
+    setLoadingEmployees(false);
+  }
+}
+
+useEffect(() => {
+  if (activePage === "Employees") {
+    loadEmployees();
+  }
+}, [activePage]);
+
+async function handleEmployeeAction(employeeId, action) {
+  const confirmed = window.confirm(
+    `Are you sure you want to ${action} this employee?`
+  );
+
+  if (!confirmed) return;
+
+  setError("");
+  setSuccess("");
+
+  try {
+    const response = await apiFetch(
+      `http://localhost:5000/api/auth/${action}-employee/${employeeId}`,
+      { method: "PATCH" }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || `Unable to ${action} employee.`);
+    }
+
+    setSuccess(`Employee ${action}d successfully.`);
+    await loadEmployees();
+  } catch (error) {
+    console.error(`Employee ${action} failed:`, error);
+    setError(error.message || `Unable to ${action} employee.`);
+  }
+}
 
   const filteredProducts = useMemo(() => products.filter((product) =>
     product.name.toLowerCase().includes(search.toLowerCase()) &&
@@ -467,6 +533,7 @@ async function checkout() {
           { label: "Billing", icon: Receipt },
           { label: "Sales History", icon: History },
           { label: "Inventory", icon: Package },
+          { label: "Employees", icon: UserCheck },
         ].map(({ label, icon: Icon }) => (
           <button key={label} className={`nav-item ${activePage === label ? "active" : ""}`} onClick={() => changePage(label)}>
             <Icon size={19} /><span>{label}</span>
@@ -715,6 +782,114 @@ async function checkout() {
                       <Printer size={15} />
                       View / Print
                     </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  </>
+)}
+{activePage === "Employees" && (
+  <>
+    <section className="page-heading">
+      <div>
+        <p className="eyebrow">TEAM MANAGEMENT</p>
+        <h1>Employee Management</h1>
+        <p className="muted">
+          Review and manage employee registration requests.
+        </p>
+      </div>
+
+      <button
+        className="secondary-button"
+        onClick={loadEmployees}
+        disabled={loadingEmployees}
+      >
+        <RotateCcw size={16} />
+        Refresh
+      </button>
+    </section>
+
+    <section className="stats-grid">
+      <div className="stat-card">
+        <span>Pending approvals</span>
+        <strong>{pendingEmployees.length}</strong>
+        <small>Employees waiting for approval</small>
+      </div>
+    </section>
+
+    <section className="inventory-panel">
+      <div className="section-heading">
+        <div>
+          <h2>Pending employees</h2>
+          <p>Approve only employees you want to give access to.</p>
+        </div>
+      </div>
+
+      {success && <div className="notice success">{success}</div>}
+      {error && <div className="notice error">{error}</div>}
+
+      {loadingEmployees ? (
+        <p className="muted">Loading employees...</p>
+      ) : pendingEmployees.length === 0 ? (
+        <div className="empty-state">
+          No pending employee requests.
+        </div>
+      ) : (
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>EMPLOYEE EMAIL</th>
+                <th>REGISTERED ON</th>
+                <th>STATUS</th>
+                <th>ACTIONS</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {pendingEmployees.map((employee) => (
+                <tr key={employee._id || employee.id}>
+                  <td>
+                    <strong>{employee.email}</strong>
+                  </td>
+
+                  <td>
+                    {employee.createdAt
+                      ? new Date(employee.createdAt).toLocaleDateString()
+                      : "—"}
+                  </td>
+
+                  <td>
+                    <span className="inventory-status low">
+                      Pending
+                    </span>
+                  </td>
+
+                  <td>
+                    <div className="action-buttons">
+                      <button
+                        className="primary-button"
+                        onClick={() =>
+                          handleEmployeeAction(employee._id || employee.id, "approve")
+                        }
+                      >
+                        <CheckCircle2 size={15} />
+                        Approve
+                      </button>
+
+                      <button
+                        className="secondary-button"
+                        onClick={() =>
+                          handleEmployeeAction(employee._id || employee.id, "reject")
+                        }
+                      >
+                        Reject
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
