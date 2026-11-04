@@ -7,34 +7,48 @@ const User = require("../models/User");
 
 async function createAdmin() {
   const uri = process.env.MONGODB_URI || process.env.MONGO_URI;
-  const email = process.env.ADMIN_EMAIL;
+  const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
   const password = process.env.ADMIN_PASSWORD;
 
   if (!uri || !email || !password || password.length < 12) {
     throw new Error(
-      "Set MongoDB URI, ADMIN_EMAIL, and a password of at least 12 characters in .env."
+      "Check MONGODB_URI, ADMIN_EMAIL and ADMIN_PASSWORD. Password must be at least 12 characters."
     );
   }
 
   await mongoose.connect(uri);
 
-  const normalizedEmail = email.trim().toLowerCase();
-  const existing = await User.findOne({ email: normalizedEmail });
-
-  if (existing) {
-    console.log("Admin account already exists; no changes made.");
-    return;
-  }
-
+  const existing = await User.findOne({ email });
   const passwordHash = await bcrypt.hash(password, 12);
 
-  await User.create({
-    email: normalizedEmail,
-    passwordHash,
-    role: "admin",
-  });
+  if (existing && existing.role !== "admin") {
+    throw new Error(
+      "This email belongs to a non-admin account. Admin setup stopped."
+    );
+  }
 
-  console.log("Admin account created successfully.");
+  if (existing) {
+    existing.passwordHash = passwordHash;
+    existing.role = "admin";
+    existing.isActive = true;
+    existing.emailVerified = true;
+    existing.approvalStatus = "approved";
+
+    await existing.save();
+
+    console.log("Existing admin account updated successfully.");
+  } else {
+    await User.create({
+      email,
+      passwordHash,
+      role: "admin",
+      isActive: true,
+      emailVerified: true,
+      approvalStatus: "approved",
+    });
+
+    console.log("Admin account created successfully.");
+  }
 }
 
 createAdmin()
@@ -43,5 +57,7 @@ createAdmin()
     process.exitCode = 1;
   })
   .finally(async () => {
-    await mongoose.disconnect();
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.disconnect();
+    }
   });

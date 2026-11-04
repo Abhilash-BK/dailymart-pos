@@ -37,33 +37,47 @@ router.post("/login", async (req, res) => {
 
     const matches = await bcrypt.compare(password, user.passwordHash);
 
-    if (!matches) {
-      return res.status(401).json({
-        message: "Invalid email or password.",
-      });
-    }
+    
+if (!matches) {
+  return res.status(401).json({
+    message: "Invalid email or password.",
+  });
+}
 
-    if (!user.emailVerified) {
-      return res.status(403).json({
-        message: "Please verify your email first.",
-      });
-    }
+if (user.role === "admin") {
+  if (!user.isActive) {
+    return res.status(403).json({
+      message: "Admin account is inactive.",
+    });
+  }
+} else if (user.role === "employee") {
+  if (!user.emailVerified) {
+    return res.status(403).json({
+      message: "Please verify your email first.",
+    });
+  }
 
-    if (user.role === "employee" && user.approvalStatus !== "approved") {
-      return res.status(403).json({
-        message:
-          user.approvalStatus === "rejected"
-            ? "Your registration was rejected. Contact the owner."
-            : "Your account is waiting for owner approval.",
-        approvalStatus: user.approvalStatus,
-      });
-    }
+  if (user.approvalStatus !== "approved") {
+    return res.status(403).json({
+      message:
+        user.approvalStatus === "rejected"
+          ? "Your registration was rejected. Contact the owner."
+          : "Your account is waiting for owner approval.",
+      approvalStatus: user.approvalStatus,
+    });
+  }
 
-    if (!user.isActive) {
-      return res.status(403).json({
-        message: "Your account is inactive. Contact the owner.",
-      });
-    }
+  if (!user.isActive) {
+    return res.status(403).json({
+      message: "Your account is inactive. Contact the owner.",
+    });
+  }
+} else {
+  return res.status(403).json({
+    message: "Access denied.",
+  });
+}
+
 
     if (!process.env.JWT_SECRET) {
       throw new Error("JWT_SECRET is missing from server/.env");

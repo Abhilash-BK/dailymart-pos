@@ -30,26 +30,33 @@ async function authenticateToken(req, res, next) {
       });
     }
 
-    if (!user.isActive || !user.emailVerified) {
-      return res.status(403).json({
-        message: "Your account is not active.",
-      });
-    }
+   
+if (!["admin", "employee"].includes(user.role)) {
+  return res.status(403).json({
+    message: "Access denied.",
+  });
+}
 
-    if (
-      user.role === "employee" &&
-      user.approvalStatus !== "approved"
-    ) {
-      return res.status(403).json({
-        message: "Your account is waiting for owner approval.",
-      });
-    }
+if (user.role === "admin" && !user.isActive) {
+  return res.status(403).json({
+    message: "Admin account is inactive.",
+  });
+}
 
-    if (!["admin", "employee"].includes(user.role)) {
-      return res.status(403).json({
-        message: "Access denied.",
-      });
-    }
+if (user.role === "employee") {
+  if (!user.emailVerified || !user.isActive) {
+    return res.status(403).json({
+      message: "Your account is not active.",
+    });
+  }
+
+  if (user.approvalStatus !== "approved") {
+    return res.status(403).json({
+      message: "Your account is waiting for owner approval.",
+    });
+  }
+}
+
 
     req.user = {
       id: user._id.toString(),
