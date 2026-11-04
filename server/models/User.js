@@ -1,9 +1,7 @@
-
 const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema(
   {
-    // User's unique email address
     email: {
       type: String,
       required: true,
@@ -12,55 +10,60 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
 
-    // Store only the bcrypt password hash
     passwordHash: {
       type: String,
       required: false,
       select: false,
     },
 
-    // admin = shop owner, employee = staff
     role: {
       type: String,
       enum: ["admin", "employee"],
       default: "employee",
     },
 
-    // Owner can deactivate an employee account
+    // Account activation
     isActive: {
       type: Boolean,
-      default: true,
+      default: false,
     },
 
-    // Email verification status
+    // Email verification
     emailVerified: {
       type: Boolean,
-      default: true,
+      default: false,
     },
 
-    // Invitation information
-    inviteTokenHash: {
+    // Owner approval
+    approvalStatus: {
       type: String,
-      select: false,
-    },
-    inviteExpiresAt: {
-      type: Date,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
     },
 
-    // Password reset information
-    resetTokenHash: {
-      type: String,
-      select: false,
-    },
-    resetExpiresAt: {
-      type: Date,
-    },
-
-    // Records which owner created the employee account
-    createdBy: {
+    approvedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
+
+    approvedAt: {
+      type: Date,
+    },
+
+    // OTP verification
+    otpHash: {
+      type: String,
+      select: false,
+    },
+
+    otpExpiresAt: Date,
+
+    otpAttempts: {
+      type: Number,
+      default: 0,
+    },
+
+    otpSentAt: Date,
   },
   { timestamps: true }
 );

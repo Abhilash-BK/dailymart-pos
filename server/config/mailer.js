@@ -1,27 +1,45 @@
+
 const nodemailer = require("nodemailer");
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "smtp.gmail.com",
-  port: Number(process.env.SMTP_PORT || 465),
-  secure: process.env.SMTP_SECURE !== "false",
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_APP_PASSWORD?.replace(/\s/g, ""),
-  },
-});
+async function sendOtpEmail(email, otp) {
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_APP_PASSWORD?.replace(/\s/g, "");
 
-async function sendInvitationEmail(email, invitationLink) {
+  if (!user || !pass) {
+    throw new Error("SMTP_USER or SMTP_APP_PASSWORD is missing.");
+  }
+
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST || "smtp.gmail.com",
+    port: Number(process.env.SMTP_PORT || 465),
+    secure: process.env.SMTP_SECURE !== "false",
+    auth: {
+      user,
+      pass,
+    },
+  });
+
   await transporter.sendMail({
-    from: `"DailyMart POS" <${process.env.SMTP_USER}>`,
+    from: `"DailyMart POS" <${user}>`,
     to: email,
-    subject: "Your DailyMart employee invitation",
-    text: `You have been invited to join DailyMart POS.
+    subject: "Your DailyMart POS verification code",
 
-Create your password using this link:
-${invitationLink}
+    text: `Your verification code is ${otp}.
 
-This invitation expires in 24 hours.`,
+This code expires in 10 minutes.
+
+If you did not request this code, ignore this email.`,
+
+    html: `
+      <div style="font-family: Arial, sans-serif; padding: 20px;">
+        <h2>DailyMart POS</h2>
+        <p>Your email verification code is:</p>
+        <h1 style="letter-spacing: 8px;">${otp}</h1>
+        <p>This code expires in 10 minutes.</p>
+        <p>If you did not request this code, ignore this email.</p>
+      </div>
+    `,
   });
 }
 
-module.exports = { sendInvitationEmail };
+module.exports = { sendOtpEmail };

@@ -1,9 +1,16 @@
+require("dotenv").config();
+console.log("SMTP configuration:", {
+  host: process.env.SMTP_HOST,
+  userConfigured: Boolean(process.env.SMTP_USER),
+  passwordConfigured: Boolean(process.env.SMTP_APP_PASSWORD),
+  jwtConfigured: Boolean(process.env.JWT_SECRET),
+});
 const authRoutes = require("./routes/auth");
 const authenticateToken = require("./middleware/authenticateToken");
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
-require("dotenv").config();
+
 
 const app = express();
 
@@ -11,6 +18,7 @@ app.use(cors({ origin: "http://localhost:5173" }));
 app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api", authenticateToken);
+
 // Product database schema
 const productSchema = new mongoose.Schema(
   {

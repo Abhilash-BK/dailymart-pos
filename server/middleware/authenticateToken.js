@@ -1,4 +1,3 @@
-
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
@@ -13,7 +12,6 @@ async function authenticateToken(req, res, next) {
   }
 
   try {
-    // Verify JWT signature and expiration
     const payload = jwt.verify(token, process.env.JWT_SECRET);
 
     if (!payload.sub) {
@@ -22,9 +20,8 @@ async function authenticateToken(req, res, next) {
       });
     }
 
-    // Fetch the latest account status and role from MongoDB
     const user = await User.findById(payload.sub).select(
-      "email role isActive emailVerified"
+      "email role isActive emailVerified approvalStatus"
     );
 
     if (!user) {
@@ -33,15 +30,18 @@ async function authenticateToken(req, res, next) {
       });
     }
 
-    if (!user.isActive) {
+    if (!user.isActive || !user.emailVerified) {
       return res.status(403).json({
-        message: "Your account has been deactivated. Contact the owner.",
+        message: "Your account is not active.",
       });
     }
 
-    if (!user.emailVerified) {
+    if (
+      user.role === "employee" &&
+      user.approvalStatus !== "approved"
+    ) {
       return res.status(403).json({
-        message: "Please verify your email before accessing DailyMart.",
+        message: "Your account is waiting for owner approval.",
       });
     }
 
@@ -51,7 +51,6 @@ async function authenticateToken(req, res, next) {
       });
     }
 
-    // Attach verified database information to the request
     req.user = {
       id: user._id.toString(),
       email: user.email,
@@ -60,8 +59,10 @@ async function authenticateToken(req, res, next) {
 
     next();
   } catch (error) {
-    if (error.name === "JsonWebTokenError" ||
-        error.name === "TokenExpiredError") {
+    if (
+      error.name === "JsonWebTokenError" ||
+      error.name === "TokenExpiredError"
+    ) {
       return res.status(401).json({
         message: "Session expired. Please sign in again.",
       });
